@@ -8,7 +8,8 @@
 
 ### 解题过程
 
-- 使用`checksec`进行检查：![checksec](/img/posts/2023-10-23-messageboard/images/checksec.png)
+- 使用`checksec`进行检查：
+![checksec](/img/posts/2023-10-23-messageboard/images/checksec.png)
 
 ![file](/img/posts/2023-10-23-messageboard/images/file.png)
 
