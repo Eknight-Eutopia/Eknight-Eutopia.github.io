@@ -8,15 +8,15 @@
 
 ### 解题过程
 
-- 使用`checksec`进行检查：![checksec](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\checksec.png)
+- 使用`checksec`进行检查：![checksec](/img/posts/2023-10-23-messageboard/images/checksec.png)
 
-![file](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\file.png)
+![file](/img/posts/2023-10-23-messageboard/images/file.png)
 
 ​		可知程序为64位，有DEP、ASLR、Canary、PIE等保护。`Canary`是一种栈溢出保护手段，会在栈中压入随机值，如果进行栈溢出攻击，会导致随机值改变，导致验证失败，从而程序不会执行。`PIE(position-independent executable, 地址无关可执行文件)`技术就是一个针对代码段.text, 数据段.*data，.bss等固定地址的一个防护技术。同ASLR一样，应用了PIE的程序会在每次加载时都变换加载基址，从而使位于程序本身的gadget也失效。
 
 - 使用`ldd`命令查看程序的依赖库libc和ld：
 
-![ldd](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\ldd.png)
+![ldd](/img/posts/2023-10-23-messageboard/images/ldd.png)
 
 ​		使用`patchelf`进行修改：
 
@@ -28,37 +28,37 @@ patchelf --replace-needed libc.so.6 ./libc-2.31.so ./message_board
 patchelf --set-interpreter ~/Documents/tools/glibc-all-in-one/libs/2.31-0ubuntu9.12_amd64/ld-2.31.so ./message_board
 ```
 
-![ldd-1](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\ldd-1.png)
+![ldd-1](/img/posts/2023-10-23-messageboard/images/ldd-1.png)
 
 - 构造python脚本，进行调试，查看程序vmmap以及stack的情况：
 
 `vmmap`：后3位均为0，前几位每次调试都会发生变化
 
-![vmmap](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\vmmap.png)
+![vmmap](/img/posts/2023-10-23-messageboard/images/vmmap.png)
 
-![vmmap-1](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\vmmap-1.png)
+![vmmap-1](/img/posts/2023-10-23-messageboard/images/vmmap-1.png)
 
 `stack`：其中有随机值`"0x7e9818f231b8c000"`和`"0xf0297d8f04ed1000"`
 
-![stack](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\stack.png)
+![stack](/img/posts/2023-10-23-messageboard/images/stack.png)
 
-![stack-1](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\stack-1.png)
+![stack-1](/img/posts/2023-10-23-messageboard/images/stack-1.png)
 
 - 使用ida工具打开程序，逆向分析，在`sub_11C9`函数位置有`getchar`函数，只有输入回车符时才会结束输入，存在栈溢出漏洞：
 
-![sub_11C9](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\sub_11C9.png)
+![sub_11C9](/img/posts/2023-10-23-messageboard/images/sub_11C9.png)
 
 - 由于`sub_11FF`函数中的`printf`函数`%s`参数仅在字符串结尾为`\x00`字符时才会停止输出，因此可以尝试在此处泄漏`canary`和`libc`的地址。
 
-![sub_11FF](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\sub_11FF.png)
+![sub_11FF](/img/posts/2023-10-23-messageboard/images/sub_11FF.png)
 
 - 构造脚本，主要思路（五次栈溢出）：首先通过printf函数的输出特性泄漏`Canary`值，然后在第二次调用`sub_11C9`函数时，通过覆盖部分地址使程序本应执行到`0x1310`转而执行`0x130b`（通过覆盖最后一字节实现），如下图所示：
 
-![partial write](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\partial write.png)
+![partial write](/img/posts/2023-10-23-messageboard/images/partial write.png)
 
 ​		然后程序重新进入漏洞函数，通过栈溢出覆盖截断字符`\x00`使`printf`函数输出程序基址。如下图所示，通过计算偏移可以得到程序基址：
 
-![程序基址](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\程序基址.png)
+![程序基址](/img/posts/2023-10-23-messageboard/images/程序基址.png)
 
 ​		然后继续到第二个`sub_11c9`函数，根据`got`表获取到libc基址，最后根据libc基址以及`one_gadget`工具可以得到结果shell：
 
@@ -138,7 +138,7 @@ p.interactive()
 
 ​		然后程序会再次执行漏洞函数，通过栈溢出覆盖截断字符`\x00`使得`printf`函数输出libc的基址。如下图所示，通过计算偏移可以得到libc的基址
 
-![libc_base](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\libc_base.png)
+![libc_base](/img/posts/2023-10-23-messageboard/images/libc_base.png)
 
 ​		然后继续到第二个`sub_11c9`函数，根据libc基址以及`one_gadget`工具可以得到结果shell：
 
@@ -195,4 +195,4 @@ p.interactive()
 
 ### 结果
 
-![result](C:\SJTU\课程\大四上\信息安全综合实践（2）\练习\messageboard\images\result.png)
+![result](/img/posts/2023-10-23-messageboard/images/result.png)
