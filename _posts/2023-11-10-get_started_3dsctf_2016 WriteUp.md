@@ -4,7 +4,7 @@ title:      get_started_3dsctf_2016 WriteUp				# 标题
 subtitle:   Eutopia's Blog #副标题
 date:       2023-11-10 				# 时间
 author:     Eutopia 						# 作者
-header-img: img/post-bg-10.jpg 	#这篇文章标题背景图片
+header-img: img/post-bg-10.png 	#这篇文章标题背景图片
 catalog: true 						# 是否归档
 tags:								#标签
     - CTF
