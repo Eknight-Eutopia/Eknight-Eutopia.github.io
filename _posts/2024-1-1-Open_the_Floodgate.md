@@ -23,7 +23,7 @@ tags:								#标签
 
 运行docker程序`sudo ./dockerHelper.sh -k`（注：需要`chmod +x`修改脚本的权限），访问http://127.0.0.1:3580/，界面如下
 
-![image-20231231132934965](2024-1-1-Open_the_Floodgate.assets/image-20231231132934965.png)
+![image-20231231132934965](/img/posts/2024-1-1-Open_the_Floodgate.assets/image-20231231132934965.png)
 
 ### 2.流量监测
 

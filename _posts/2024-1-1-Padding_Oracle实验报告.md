@@ -273,4 +273,4 @@ if __name__ == "__main__":
     print("Plaintext: " + plain_text) 
 ```
 
-![image-20231231130753727](/img/posts/Paddiing Oracle实验报告.assets/image-20231231130753727.png)
+![image-20231231130753727](/img/posts/2024-1-1-Padding_Oracle实验报告.assets/image-20231231130753727.png)

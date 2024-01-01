@@ -23,7 +23,7 @@ tags:								#标签
 
 `nc 202.120.1.66 1069`连接到服务器，输入示例cookie，结果如下。
 
-/img/posts/![image-20231231160545230](2024-1-1-Padding_Oracle.assets/image-20231231160545230.png)
+/img/posts/![image-20231231160545230](/img/posts/2024-1-1-Padding_Oracle.assets/image-20231231160545230.png)
 
 可以利用Padding Oracle攻击修改密文。具体原理参考下图：
 
