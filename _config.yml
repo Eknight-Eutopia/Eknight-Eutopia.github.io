@@ -66,7 +66,7 @@ gitalk:
   clientSecret: 647a0394817c8c2c9c3292c51c2d5b7556e3ec0a    #生成的clientSecret
   repo: eknight-eutopia.github.io    #仓库名称
   owner: Eknight-Eutopia    #github用户名
-  admin: Eutopia
+  admin: Eknight-Eutopia
   distractionFreeMode: true #是否启用类似FB的阴影遮罩
 
 
