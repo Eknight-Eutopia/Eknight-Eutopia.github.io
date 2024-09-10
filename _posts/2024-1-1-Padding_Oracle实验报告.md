@@ -1,3 +1,16 @@
+---
+layout:     post   				    # 使用的布局（不需要改）
+title:      【网络攻防大作业】Magic Padding Oracle实验报告 				# 标题 
+subtitle:   Eutopia's Blog #副标题
+date:       2024-1-1				# 时间
+author:     Eutopia 						# 作者
+header-img: img/post-bg-1.png 	#这篇文章标题背景图片
+catalog: true 						# 是否归档
+tags:								#标签
+    - 密码
+    - Padding Oracle
+---
+
 # Padding Oracle实验报告
 
 ## 1. Overview

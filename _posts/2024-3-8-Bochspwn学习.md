@@ -1,3 +1,16 @@
+---
+layout:     post   				    # 使用的布局（不需要改）
+title:      Bochspwn学习		# 标题 
+subtitle:   Eutopia's Blog #副标题
+date:       2024-3-8				# 时间
+author:     Eutopia 						# 作者
+header-img: img/post-bg-8.png 	#这篇文章标题背景图片
+catalog: true 						# 是否归档
+tags:								#标签
+    - 论文复现
+    - 内核
+    - 条件竞争
+---
 # Bochspwn
 
 ## 目的
